@@ -94,6 +94,20 @@ Phone `localhost` tak nahi pahunch sakta. App ki **Settings → Server URL** me:
 - Internet par: jahan server deploy kiya ho (Render, Railway, VPS…) — tab `.env` me
   `API_TOKEN` zaroor set karein aur wahi token app ki Settings me daalein.
 
+## Internet wala server (Vercel)
+
+Chat server Vercel par chal raha hai: **https://nova-ai-server.vercel.app** (project
+`nova-ai-server`). App isi ko default use karta hai, isliye phone par kuch set nahi karna.
+
+- Abhi `PROVIDER=mock` hai, yani demo jawab aate hain. Vercel par GPU nahi hota, isliye AI
+  model wahan nahi chal sakta.
+- Apna model kahin aur chalaiye (Colab ya GPU server, dekhiye TRAINING.md), phir Vercel
+  dashboard → Project → Settings → Environment Variables me `PROVIDER=nova` aur
+  `NOVA_MODEL_URL=https://<model-ka-link>/v1` daal kar redeploy kijiye. App me kuch nahi badalna.
+- Model judte hi `API_TOKEN` bhi set kijiye, taaki koi aur aapka server free me na chala sake.
+- `server/api/*.js` aur `server/vercel.json` Vercel ke liye hain; local par `npm start` pehle
+  jaisa chalta hai. `SAVE_CHATS` Vercel par kaam nahi karta (wahan files save nahi hoti).
+
 ## Server settings (`server/.env`)
 
 | Setting | Kaam |

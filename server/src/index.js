@@ -131,10 +131,11 @@ async function handleChat(req, res, config) {
   }
 }
 
-export function createServer(config = loadConfig()) {
+/** The request listener on its own, so serverless hosts (Vercel) can call it directly. */
+export function createHandler(config = loadConfig()) {
   getProvider(config.provider); // fail fast on a typo in PROVIDER
 
-  return http.createServer(async (req, res) => {
+  return async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -166,7 +167,11 @@ export function createServer(config = loadConfig()) {
       if (status === 500) console.error(err);
       sendJson(res, status, { error: status === 500 ? 'Internal server error' : err.message });
     }
-  });
+  };
+}
+
+export function createServer(config = loadConfig()) {
+  return http.createServer(createHandler(config));
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {

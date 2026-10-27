@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiMessage, streamChat } from '../api/chat';
+import { ApiMessage, friendlyError, streamChat } from '../api/chat';
 import { keepImage } from '../media/images';
 import type { ChatImage, Conversation, Message } from '../types';
 import { useSettings } from './SettingsContext';
@@ -149,10 +149,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       })
         .catch((err: unknown) => {
           if (controller.signal.aborted) return;
-          const message = err instanceof Error ? err.message : String(err);
-          updateMessage(conversationId, reply.id, () => ({
-            error: `${message}\n\nCheck that the server is running and the Server URL in Settings is correct.`,
-          }));
+          updateMessage(conversationId, reply.id, () => ({ error: friendlyError(err) }));
         })
         .finally(() => {
           abortRef.current = null;

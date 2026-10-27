@@ -1,16 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Platform } from 'react-native';
 import type { Settings } from '../types';
 
 const STORAGE_KEY = 'nova-ai/settings';
 
-// The Android emulator reaches the host computer at 10.0.2.2. On a real phone,
-// set EXPO_PUBLIC_API_URL (or change it in Settings) to your computer's LAN IP.
+// The hosted server on Vercel; override with EXPO_PUBLIC_API_URL (e.g. a local
+// server while developing) or change it in Settings.
+const HOSTED_SERVER = 'https://nova-ai-server.vercel.app';
+// Older builds defaulted to these, which only work on an emulator or the same computer.
+const OLD_DEFAULTS = ['http://10.0.2.2:8787', 'http://localhost:8787'];
+
 export const defaultSettings: Settings = {
-  serverUrl:
-    process.env.EXPO_PUBLIC_API_URL ??
-    (Platform.OS === 'android' ? 'http://10.0.2.2:8787' : 'http://localhost:8787'),
+  serverUrl: process.env.EXPO_PUBLIC_API_URL ?? HOSTED_SERVER,
   apiToken: '',
   systemPrompt: '',
   voiceLanguage: 'hi-IN',
@@ -31,7 +32,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => raw && setSettings({ ...defaultSettings, ...JSON.parse(raw) }))
+      .then((raw) => {
+        if (!raw) return;
+        const saved = { ...defaultSettings, ...JSON.parse(raw) };
+        if (OLD_DEFAULTS.includes(saved.serverUrl)) saved.serverUrl = defaultSettings.serverUrl;
+        setSettings(saved);
+      })
       .catch(() => {});
   }, []);
 

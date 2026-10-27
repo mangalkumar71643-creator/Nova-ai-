@@ -33,11 +33,11 @@ export default function ServerScreen() {
     >
       <Field
         label="Server URL"
-        hint="Nova AI server ka address. Asli phone par apne computer ka IP use karein, jaise http://192.168.1.5:8787"
+        hint="Nova AI server ka address. Default: https://nova-ai-server.vercel.app (internet par chalne wala server)."
         value={settings.serverUrl}
         onChangeText={(serverUrl) => updateSettings({ serverUrl })}
         keyboardType="url"
-        placeholder="http://localhost:8787"
+        placeholder="https://nova-ai-server.vercel.app"
       />
       <Field
         label="API token (optional)"
