@@ -23,21 +23,37 @@ const ERROR_MESSAGES: Record<string, string> = {
 /**
  * Speech-to-text for the composer. `onText` receives the full transcript so far
  * (interim results included), so the input box fills in while the user talks.
+ * `onEnd` gets the final transcript once the user stops speaking.
  */
-export function useVoiceInput(lang: string, onText: (text: string) => void) {
+export function useVoiceInput(
+  lang: string,
+  onText: (text: string) => void,
+  onEnd?: (transcript: string) => void,
+) {
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const onTextRef = useRef(onText);
   onTextRef.current = onText;
+  const onEndRef = useRef(onEnd);
+  onEndRef.current = onEnd;
+  const transcriptRef = useRef('');
 
   useEffect(() => {
     if (!recognition) return;
     const subscriptions = [
-      recognition.addListener('start', () => setListening(true)),
-      recognition.addListener('end', () => setListening(false)),
+      recognition.addListener('start', () => {
+        transcriptRef.current = '';
+        setListening(true);
+      }),
+      recognition.addListener('end', () => {
+        setListening(false);
+        onEndRef.current?.(transcriptRef.current);
+      }),
       recognition.addListener('result', (event) => {
         const transcript = event.results[0]?.transcript;
-        if (transcript) onTextRef.current(transcript);
+        if (!transcript) return;
+        transcriptRef.current = transcript;
+        onTextRef.current(transcript);
       }),
       recognition.addListener('error', (event) => {
         if (event.error === 'aborted') return;

@@ -32,4 +32,8 @@ export interface Settings {
   apiToken: string;
   systemPrompt: string;
   voiceLanguage: VoiceLanguage;
+  /** Shown in the drawer and settings until real accounts exist. */
+  displayName: string;
+  appearance: 'system' | 'light' | 'dark';
+  accent: 'purple' | 'blue' | 'green' | 'orange' | 'black';
 }

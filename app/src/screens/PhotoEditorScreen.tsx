@@ -1,18 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import {
-  FlipType,
-  ImageManipulator,
-  type ImageManipulatorContext,
-  SaveFormat,
-} from 'expo-image-manipulator';
+import { FlipType, ImageManipulator, type ImageManipulatorContext, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { prepareImage, saveToGallery } from '../media/images';
 import type { RootStackParamList } from '../navigation/types';
 import { useChat } from '../state/ChatContext';
-import { colors, radius, spacing, typography } from '../theme';
+import { type Palette, radius, spacing, typography, useStyles, useTheme } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PhotoEditor'>;
 
@@ -60,6 +55,8 @@ async function render(ctx: ImageManipulatorContext): Promise<EditedImage> {
 }
 
 export default function PhotoEditorScreen({ navigation, route }: Props) {
+  const styles = useStyles(createStyles);
+  const { colors } = useTheme();
   const { setDraftImage } = useChat();
   const [history, setHistory] = useState<EditedImage[]>([]);
   const [busy, setBusy] = useState(false);
@@ -180,7 +177,12 @@ export default function PhotoEditorScreen({ navigation, route }: Props) {
           <Text style={styles.toolLabel}>Undo</Text>
         </Pressable>
         {TOOLS.map((tool) => (
-          <Pressable key={tool.label} style={styles.tool} disabled={busy} onPress={() => apply(tool.transform)}>
+          <Pressable
+            key={tool.label}
+            style={styles.tool}
+            disabled={busy}
+            onPress={() => apply(tool.transform)}
+          >
             <Ionicons name={tool.icon} size={22} color={colors.textPrimary} />
             <Text style={styles.toolLabel}>{tool.label}</Text>
           </Pressable>
@@ -195,7 +197,7 @@ export default function PhotoEditorScreen({ navigation, route }: Props) {
           <Text style={styles.secondaryText}>Save</Text>
         </Pressable>
         <Pressable style={[styles.primary, styles.flex]} disabled={busy} onPress={sendToChat}>
-          <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textPrimary} />
+          <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.onAccent} />
           <Text style={styles.primaryText}>AI se poochho</Text>
         </Pressable>
       </View>
@@ -203,117 +205,118 @@ export default function PhotoEditorScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingBottom: spacing.xl,
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    padding: spacing.xl,
-  },
-  flex: {
-    flex: 1,
-  },
-  title: {
-    color: colors.textPrimary,
-    fontSize: typography.xl,
-    fontWeight: '600',
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: typography.md,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  canvas: {
-    flex: 1,
-    margin: spacing.lg,
-    borderRadius: radius.md,
-    backgroundColor: colors.codeBackground,
-    overflow: 'hidden',
-  },
-  image: {
-    flex: 1,
-  },
-  busy: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-  },
-  size: {
-    color: colors.textMuted,
-    fontSize: typography.xs,
-    textAlign: 'center',
-  },
-  toolStrip: {
-    flexGrow: 0,
-  },
-  tools: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.xs,
-  },
-  tool: {
-    width: 64,
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surface,
-  },
-  toolLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.xs,
-  },
-  disabled: {
-    opacity: 0.35,
-  },
-  status: {
-    color: colors.textSecondary,
-    fontSize: typography.sm,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  primary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.accent,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-  },
-  primaryText: {
-    color: colors.textPrimary,
-    fontSize: typography.md,
-    fontWeight: '600',
-  },
-  secondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  secondaryText: {
-    color: colors.textPrimary,
-    fontSize: typography.md,
-  },
-});
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingBottom: spacing.xl,
+    },
+    center: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
+      padding: spacing.xl,
+    },
+    flex: {
+      flex: 1,
+    },
+    title: {
+      color: colors.textPrimary,
+      fontSize: typography.xl,
+      fontWeight: '600',
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      fontSize: typography.md,
+    },
+    row: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginTop: spacing.md,
+    },
+    canvas: {
+      flex: 1,
+      margin: spacing.lg,
+      borderRadius: radius.md,
+      backgroundColor: colors.codeBackground,
+      overflow: 'hidden',
+    },
+    image: {
+      flex: 1,
+    },
+    busy: {
+      ...StyleSheet.absoluteFill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    },
+    size: {
+      color: colors.textMuted,
+      fontSize: typography.xs,
+      textAlign: 'center',
+    },
+    toolStrip: {
+      flexGrow: 0,
+    },
+    tools: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      gap: spacing.xs,
+    },
+    tool: {
+      width: 64,
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface,
+    },
+    toolLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.xs,
+    },
+    disabled: {
+      opacity: 0.35,
+    },
+    status: {
+      color: colors.textSecondary,
+      fontSize: typography.sm,
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      paddingHorizontal: spacing.lg,
+    },
+    primary: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.accent,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+    },
+    primaryText: {
+      color: colors.onAccent,
+      fontSize: typography.md,
+      fontWeight: '600',
+    },
+    secondary: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+    },
+    secondaryText: {
+      color: colors.textPrimary,
+      fontSize: typography.md,
+    },
+  });

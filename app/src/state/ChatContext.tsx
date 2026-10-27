@@ -1,13 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiMessage, streamChat } from '../api/chat';
 import { keepImage } from '../media/images';
 import type { ChatImage, Conversation, Message } from '../types';
@@ -38,7 +30,9 @@ function toApiMessage(m: Message): ApiMessage {
 function withoutBase64(conversations: Conversation[]) {
   return conversations.map((c) => ({
     ...c,
-    messages: c.messages.map((m) => (m.image?.base64 ? { ...m, image: { ...m.image, base64: undefined } } : m)),
+    messages: c.messages.map((m) =>
+      m.image?.base64 ? { ...m, image: { ...m.image, base64: undefined } } : m,
+    ),
   }));
 }
 
@@ -55,6 +49,7 @@ interface ChatContextValue {
   startNewChat: () => void;
   openConversation: (id: string) => void;
   deleteConversation: (id: string) => void;
+  deleteAllConversations: () => void;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -113,7 +108,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       const existing = conversations.find((c) => c.id === activeId);
       const conversationId = existing?.id ?? newId();
       const now = Date.now();
-      const userMessage: Message = { id: newId(), role: 'user', content, createdAt: now, image: image ?? undefined };
+      const userMessage: Message = {
+        id: newId(),
+        role: 'user',
+        content,
+        createdAt: now,
+        image: image ?? undefined,
+      };
       const reply: Message = { id: newId(), role: 'assistant', content: '', createdAt: now };
       const history = [...(existing?.messages ?? []), userMessage]
         .filter((m) => !m.error && m.content)
@@ -131,7 +132,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
       if (image) {
         keepImage(image.uri)
-          .then((uri) => updateMessage(conversationId, userMessage.id, (m) => ({ image: { ...m.image!, uri } })))
+          .then((uri) =>
+            updateMessage(conversationId, userMessage.id, (m) => ({ image: { ...m.image!, uri } })),
+          )
           .catch(() => {});
       }
 
@@ -174,6 +177,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     [streamingId],
   );
 
+  const deleteAllConversations = useCallback(() => {
+    abortRef.current?.abort();
+    setConversations([]);
+    setActiveId(null);
+  }, []);
+
   const value = useMemo<ChatContextValue>(
     () => ({
       conversations,
@@ -186,6 +195,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       startNewChat,
       openConversation,
       deleteConversation,
+      deleteAllConversations,
     }),
     [
       conversations,
@@ -197,6 +207,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       startNewChat,
       openConversation,
       deleteConversation,
+      deleteAllConversations,
     ],
   );
 

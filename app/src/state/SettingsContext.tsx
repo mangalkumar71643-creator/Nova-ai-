@@ -14,6 +14,9 @@ export const defaultSettings: Settings = {
   apiToken: '',
   systemPrompt: '',
   voiceLanguage: 'hi-IN',
+  displayName: '',
+  appearance: 'system',
+  accent: 'purple',
 };
 
 interface SettingsContextValue {

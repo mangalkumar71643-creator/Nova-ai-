@@ -1,10 +1,7 @@
 import { fetch } from 'expo/fetch';
 import type { Role, Settings } from '../types';
 
-type ServerEvent =
-  | { type: 'delta'; text: string }
-  | { type: 'done' }
-  | { type: 'error'; message: string };
+type ServerEvent = { type: 'delta'; text: string } | { type: 'done' } | { type: 'error'; message: string };
 
 export interface ApiMessage {
   role: Role;

@@ -17,7 +17,12 @@ Nova-ai-/
 
 ## Features
 
-- 💬 ChatGPT jaisi chat — jawab word-by-word aata hai, **Stop** button
+- 💬 ChatGPT jaisa design — gol header buttons, pill wala input box, side menu (drawer) me chats
+  aur search, settings page jisme avatar, cards aur "Search settings"
+- 🌗 Light / Dark / System theme aur accent color (Purple, Blue, Green, Orange, Black)
+- 🗣️ **Voice mode** — kaala "Voice" button dabaiye, boliye; sawal apne aap jaata hai aur jawab
+  bolkar sunaya jaata hai (mic icon sirf text likhwata hai)
+- 📋 Har jawab ke neeche copy aur speaker button; jawab word-by-word, **Stop** button
 - 📷 **Photo bhejkar sawal** — camera ya gallery se (photo samajhne ke liye vision model chahiye)
 - 🎨 **Photo editor** — ghumana, palatna (mirror/ulta), crop (1:1, 4:5, 16:9), chhota karna,
   undo, gallery me save, aur edit ki hui photo par AI se sawal

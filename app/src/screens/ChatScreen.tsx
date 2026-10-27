@@ -1,86 +1,79 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useRef } from 'react';
-import {
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Composer from '../components/Composer';
-import Logo from '../components/Logo';
+import Composer, { type ComposerHandle } from '../components/Composer';
 import MessageBubble from '../components/MessageBubble';
+import { type IconName, MenuIcon, RoundButton } from '../components/ui';
 import { useSpeaker } from '../media/voice';
 import type { RootStackParamList } from '../navigation/types';
 import { useChat } from '../state/ChatContext';
 import { useSettings } from '../state/SettingsContext';
-import { colors, radius, spacing, typography } from '../theme';
+import { type Palette, spacing, typography, useStyles, useTheme } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
-const SUGGESTIONS = [
-  'Mujhe Python seekhne ka plan bana do',
-  'Explain AI training in simple words',
-  'Ek chhoti si kahani likho',
-  'Healthy breakfast ideas batao',
-];
-
-function IconButton({
-  name,
-  label,
-  onPress,
-}: {
-  name: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable accessibilityLabel={label} hitSlop={8} onPress={onPress} style={styles.iconButton}>
-      <Ionicons name={name} size={22} color={colors.textPrimary} />
-    </Pressable>
-  );
-}
-
 export default function ChatScreen({ navigation }: Props) {
-  const { activeConversation, streamingId, sendMessage, startNewChat } = useChat();
+  const styles = useStyles(createStyles);
+  const { colors } = useTheme();
+  const { activeConversation, streamingId, startNewChat } = useChat();
   const { settings } = useSettings();
   const speaker = useSpeaker(settings.voiceLanguage);
   const listRef = useRef<FlatList>(null);
+  const composerRef = useRef<ComposerHandle>(null);
   const messages = activeConversation?.messages ?? [];
   const isStreaming = streamingId !== null;
   const openEditor = (uri?: string) => navigation.navigate('PhotoEditor', { uri });
 
+  // In voice mode the reply is read out loud as soon as it has finished streaming.
+  const speakNextReply = useRef(false);
+  const wasStreaming = useRef(false);
+  useEffect(() => {
+    if (wasStreaming.current && !isStreaming && speakNextReply.current) {
+      speakNextReply.current = false;
+      const last = messages.at(-1);
+      if (last?.role === 'assistant' && last.content) speaker.toggle(last.id, last.content);
+    }
+    wasStreaming.current = isStreaming;
+  }, [isStreaming, messages, speaker]);
+
+  const suggestions: { icon: IconName; label: string; onPress: () => void }[] = [
+    {
+      icon: 'image-outline',
+      label: 'Photo dikhao aur poochho',
+      onPress: () => composerRef.current?.attach('library'),
+    },
+    { icon: 'color-wand-outline', label: 'Photo edit karo', onPress: () => openEditor() },
+    {
+      icon: 'pencil-outline',
+      label: 'Likhna ya edit karna',
+      onPress: () => composerRef.current?.prefill('Mere liye likho: '),
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <IconButton name="menu" label="Open chats" onPress={() => navigation.navigate('Conversations')} />
+        <RoundButton label="Open menu" onPress={() => navigation.navigate('Drawer')}>
+          <MenuIcon />
+        </RoundButton>
         <Text style={styles.title} numberOfLines={1}>
-          {activeConversation?.title ?? 'Nova AI'}
+          {activeConversation?.title ?? ''}
         </Text>
-        <IconButton name="color-wand-outline" label="Photo editor" onPress={() => openEditor()} />
-        <IconButton name="create-outline" label="New chat" onPress={startNewChat} />
-        <IconButton name="settings-outline" label="Settings" onPress={() => navigation.navigate('Settings')} />
+        <RoundButton icon="create-outline" label="New chat" onPress={startNewChat} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {messages.length === 0 ? (
           <View style={styles.empty}>
-            <Logo size={64} />
-            <Text style={styles.emptyTitle}>Aaj main aapki kya madad karun?</Text>
-            <View style={styles.suggestions}>
-              {SUGGESTIONS.map((s) => (
-                <Pressable key={s} style={styles.suggestion} onPress={() => sendMessage(s)}>
-                  <Text style={styles.suggestionText}>{s}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <View style={styles.flex} />
+            {suggestions.map((s) => (
+              <Pressable key={s.label} style={styles.suggestion} onPress={s.onPress}>
+                <Ionicons name={s.icon} size={26} color={colors.textSecondary} />
+                <Text style={styles.suggestionText}>{s.label}</Text>
+              </Pressable>
+            ))}
           </View>
         ) : (
           <FlatList
@@ -105,76 +98,58 @@ export default function ChatScreen({ navigation }: Props) {
           />
         )}
 
-        <Composer isStreaming={isStreaming} onEditImage={openEditor} />
-        <Text style={styles.disclaimer}>Nova AI galti kar sakta hai. Zaroori baatein check karein.</Text>
+        <Composer
+          ref={composerRef}
+          isStreaming={isStreaming}
+          onEditImage={openEditor}
+          onVoiceTurn={() => (speakNextReply.current = true)}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  flex: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  iconButton: {
-    padding: spacing.sm,
-  },
-  title: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: typography.lg,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  list: {
-    paddingVertical: spacing.md,
-  },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-    gap: spacing.lg,
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.xl,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  suggestions: {
-    width: '100%',
-    maxWidth: 520,
-    gap: spacing.sm,
-  },
-  suggestion: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  suggestionText: {
-    color: colors.textSecondary,
-    fontSize: typography.sm,
-  },
-  disclaimer: {
-    color: colors.textMuted,
-    fontSize: typography.xs,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-});
+const createStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    flex: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.sm,
+    },
+    title: {
+      flex: 1,
+      color: c.textPrimary,
+      fontSize: typography.md,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    list: {
+      paddingVertical: spacing.md,
+    },
+    empty: {
+      flex: 1,
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.md,
+    },
+    suggestion: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.lg,
+      paddingVertical: spacing.lg,
+    },
+    suggestionText: {
+      color: c.textSecondary,
+      fontSize: typography.lg,
+      fontWeight: '500',
+    },
+  });

@@ -5,8 +5,8 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#0F1115",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F9F9F9",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.novaai.app",
@@ -34,7 +34,11 @@
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
-          "backgroundColor": "#0F1115"
+          "backgroundColor": "#F9F9F9",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#212121"
+          }
         }
       ],
       [

@@ -14,9 +14,7 @@ export async function prepareImage(uri: string): Promise<ChatImage> {
   const scale = MAX_SIDE / Math.max(original.width, original.height);
   const image =
     scale < 1
-      ? await context
-          .resize({ width: Math.round(original.width * scale), height: null })
-          .renderAsync()
+      ? await context.resize({ width: Math.round(original.width * scale), height: null }).renderAsync()
       : original;
   const saved = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.8, base64: true });
   return { uri: saved.uri, width: saved.width, height: saved.height, base64: saved.base64 };

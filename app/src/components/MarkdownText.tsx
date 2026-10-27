@@ -1,11 +1,12 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../theme';
+import { type Palette, radius, spacing, typography, useStyles } from '../theme';
 
 // A deliberately small markdown renderer: ``` code blocks, `inline code` and **bold**.
 // Swap for a full markdown library later if you need tables, lists, links, etc.
 
 type Block = { kind: 'text' | 'code'; content: string; lang?: string };
+type Styles = ReturnType<typeof createStyles>;
 
 function splitBlocks(source: string): Block[] {
   const blocks: Block[] = [];
@@ -21,7 +22,7 @@ function splitBlocks(source: string): Block[] {
   return blocks;
 }
 
-function renderInline(text: string) {
+function renderInline(text: string, styles: Styles) {
   return text.split(/(\*\*[^*]+\*\*|`[^`\n]+`)/g).map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
       return (
@@ -42,6 +43,7 @@ function renderInline(text: string) {
 }
 
 export default function MarkdownText({ children }: { children: string }) {
+  const styles = useStyles(createStyles);
   return (
     <View style={styles.container}>
       {splitBlocks(children).map((block, i) => {
@@ -60,7 +62,7 @@ export default function MarkdownText({ children }: { children: string }) {
         const text = block.content.replace(/^\n+|\n+$/g, '');
         return text ? (
           <Text key={i} selectable style={styles.text}>
-            {renderInline(text)}
+            {renderInline(text, styles)}
           </Text>
         ) : null;
       })}
@@ -70,39 +72,38 @@ export default function MarkdownText({ children }: { children: string }) {
 
 const mono = { fontFamily: 'monospace' } as const;
 
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.sm,
-  },
-  text: {
-    color: colors.textPrimary,
-    fontSize: typography.md,
-    lineHeight: 23,
-  },
-  bold: {
-    fontWeight: '700',
-  },
-  inlineCode: {
-    ...mono,
-    backgroundColor: colors.surfaceRaised,
-    fontSize: typography.sm,
-  },
-  codeBlock: {
-    backgroundColor: colors.codeBackground,
-    borderRadius: radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  codeLang: {
-    color: colors.textMuted,
-    fontSize: typography.xs,
-  },
-  code: {
-    ...mono,
-    color: colors.textPrimary,
-    fontSize: typography.sm,
-    lineHeight: 20,
-  },
-});
+const createStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: {
+      gap: spacing.md,
+    },
+    text: {
+      color: c.textPrimary,
+      fontSize: typography.md + 1,
+      lineHeight: 26,
+    },
+    bold: {
+      fontWeight: '700',
+    },
+    inlineCode: {
+      ...mono,
+      backgroundColor: c.muted,
+      fontSize: typography.sm,
+    },
+    codeBlock: {
+      backgroundColor: c.codeBackground,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
+    codeLang: {
+      color: c.textMuted,
+      fontSize: typography.xs,
+    },
+    code: {
+      ...mono,
+      color: c.textPrimary,
+      fontSize: typography.sm,
+      lineHeight: 20,
+    },
+  });
