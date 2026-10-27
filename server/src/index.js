@@ -5,9 +5,12 @@ import { pathToFileURL } from 'node:url';
 import { loadConfig } from './config.js';
 import { getProvider } from './providers/index.js';
 
-const MAX_BODY_BYTES = 1_000_000;
+const MAX_BODY_BYTES = 20_000_000;
 const MAX_MESSAGES = 100;
 const MAX_MESSAGE_CHARS = 20_000;
+const MAX_IMAGES_PER_MESSAGE = 4;
+const MAX_IMAGE_CHARS = 8_000_000;
+const IMAGE_DATA_URL = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/;
 
 class HttpError extends Error {
   constructor(status, message) {
@@ -36,7 +39,19 @@ async function readJson(req) {
   }
 }
 
+function validateImages(images) {
+  if (!Array.isArray(images) || images.length > MAX_IMAGES_PER_MESSAGE) {
+    throw new HttpError(400, `"images" must be an array of at most ${MAX_IMAGES_PER_MESSAGE} photos`);
+  }
+  for (const image of images) {
+    if (typeof image !== 'string' || image.length > MAX_IMAGE_CHARS || !IMAGE_DATA_URL.test(image)) {
+      throw new HttpError(400, 'Each image must be a base64 data URL (jpeg, png, webp or gif) under 6 MB');
+    }
+  }
+}
+
 // Only user/assistant turns come from the client; the system prompt is added here.
+// Photos become OpenAI-style content parts, which vision models understand.
 function validateMessages(messages) {
   if (!Array.isArray(messages) || messages.length === 0) {
     throw new HttpError(400, '"messages" must be a non-empty array');
@@ -51,7 +66,16 @@ function validateMessages(messages) {
     if (m.content.length > MAX_MESSAGE_CHARS) {
       throw new HttpError(400, `Message too long (max ${MAX_MESSAGE_CHARS} characters)`);
     }
-    return { role: m.role, content: m.content };
+    if (m.images === undefined || m.images.length === 0) return { role: m.role, content: m.content };
+    if (m.role !== 'user') throw new HttpError(400, 'Only user messages can have images');
+    validateImages(m.images);
+    return {
+      role: 'user',
+      content: [
+        { type: 'text', text: m.content },
+        ...m.images.map((url) => ({ type: 'image_url', image_url: { url } })),
+      ],
+    };
   });
 }
 

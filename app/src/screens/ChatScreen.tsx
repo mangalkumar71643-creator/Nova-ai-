@@ -12,9 +12,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Composer from '../components/Composer';
+import Logo from '../components/Logo';
 import MessageBubble from '../components/MessageBubble';
+import { useSpeaker } from '../media/voice';
 import type { RootStackParamList } from '../navigation/types';
 import { useChat } from '../state/ChatContext';
+import { useSettings } from '../state/SettingsContext';
 import { colors, radius, spacing, typography } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
@@ -43,10 +46,13 @@ function IconButton({
 }
 
 export default function ChatScreen({ navigation }: Props) {
-  const { activeConversation, streamingId, sendMessage, stopGenerating, startNewChat } = useChat();
+  const { activeConversation, streamingId, sendMessage, startNewChat } = useChat();
+  const { settings } = useSettings();
+  const speaker = useSpeaker(settings.voiceLanguage);
   const listRef = useRef<FlatList>(null);
   const messages = activeConversation?.messages ?? [];
   const isStreaming = streamingId !== null;
+  const openEditor = (uri?: string) => navigation.navigate('PhotoEditor', { uri });
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -55,6 +61,7 @@ export default function ChatScreen({ navigation }: Props) {
         <Text style={styles.title} numberOfLines={1}>
           {activeConversation?.title ?? 'Nova AI'}
         </Text>
+        <IconButton name="color-wand-outline" label="Photo editor" onPress={() => openEditor()} />
         <IconButton name="create-outline" label="New chat" onPress={startNewChat} />
         <IconButton name="settings-outline" label="Settings" onPress={() => navigation.navigate('Settings')} />
       </View>
@@ -65,9 +72,7 @@ export default function ChatScreen({ navigation }: Props) {
       >
         {messages.length === 0 ? (
           <View style={styles.empty}>
-            <View style={styles.logo}>
-              <Ionicons name="sparkles" size={28} color={colors.textPrimary} />
-            </View>
+            <Logo size={64} />
             <Text style={styles.emptyTitle}>Aaj main aapki kya madad karun?</Text>
             <View style={styles.suggestions}>
               {SUGGESTIONS.map((s) => (
@@ -87,8 +92,12 @@ export default function ChatScreen({ navigation }: Props) {
               <MessageBubble
                 message={item}
                 isStreaming={isStreaming && index === messages.length - 1}
+                isSpeaking={speaker.speakingId === item.id}
+                onSpeak={(m) => speaker.toggle(m.id, m.content)}
+                onOpenImage={openEditor}
               />
             )}
+            extraData={speaker.speakingId}
             contentContainerStyle={styles.list}
             keyboardDismissMode="interactive"
             keyboardShouldPersistTaps="handled"
@@ -96,11 +105,7 @@ export default function ChatScreen({ navigation }: Props) {
           />
         )}
 
-        <Composer
-          isStreaming={streamingId === activeConversation?.id && isStreaming}
-          onSend={sendMessage}
-          onStop={stopGenerating}
-        />
+        <Composer isStreaming={isStreaming} onEditImage={openEditor} />
         <Text style={styles.disclaimer}>Nova AI galti kar sakta hai. Zaroori baatein check karein.</Text>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -143,14 +148,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.xl,
     gap: spacing.lg,
-  },
-  logo: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   emptyTitle: {
     color: colors.textPrimary,

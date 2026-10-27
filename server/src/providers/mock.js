@@ -10,9 +10,17 @@ const sleep = (ms, signal) =>
     });
   });
 
+// Message content is a string, or an array of text/image parts when photos are attached.
+function textOf(content) {
+  return typeof content === 'string' ? content : content.find((p) => p.type === 'text')?.text ?? '';
+}
+
 function buildReply(messages) {
   const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-  const question = lastUser?.content.trim() ?? '';
+  const question = textOf(lastUser?.content ?? '').trim();
+  const photos = Array.isArray(lastUser?.content)
+    ? lastUser.content.filter((p) => p.type === 'image_url').length
+    : 0;
   const turns = messages.filter((m) => m.role === 'user').length;
 
   return [
@@ -20,13 +28,15 @@ function buildReply(messages) {
     '',
     `Aapne likha: "${question.length > 200 ? `${question.slice(0, 200)}…` : question}"`,
     '',
-    `Is chat me yeh aapka message number ${turns} hai. Asli jawab ke liye server ki \`.env\` file me ` +
-      '`PROVIDER=openai` set karke apna model (OpenAI, Ollama, ya aapka khud ka trained model) jodiye.',
+    ...(photos
+      ? [`Aapne ${photos} photo bheji hai. Photo samajhne ke liye vision model chahiye (jaise Qwen2.5-VL) — TRAINING.md dekhiye.`, '']
+      : []),
+    `Is chat me yeh aapka message number ${turns} hai. Asli jawab ke liye apna model chalaiye ` +
+      '(`model/serve.py`) aur server ki `.env` file me yeh likhiye:',
     '',
     '```bash',
-    'PROVIDER=openai',
-    'OPENAI_BASE_URL=http://localhost:11434/v1',
-    'MODEL=llama3.2',
+    'PROVIDER=nova',
+    'NOVA_MODEL_URL=http://localhost:8000/v1',
     '```',
   ].join('\n');
 }

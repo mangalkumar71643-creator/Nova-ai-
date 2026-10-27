@@ -2,7 +2,13 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
 import { checkHealth } from '../api/chat';
 import { useSettings } from '../state/SettingsContext';
+import type { VoiceLanguage } from '../types';
 import { colors, radius, spacing, typography } from '../theme';
+
+const VOICE_LANGUAGES: { value: VoiceLanguage; label: string }[] = [
+  { value: 'hi-IN', label: 'हिंदी / Hinglish' },
+  { value: 'en-IN', label: 'English' },
+];
 
 function Field({
   label,
@@ -71,6 +77,22 @@ export default function SettingsScreen() {
         placeholder="e.g. Hamesha Hinglish me chhota jawab do."
       />
 
+      <View style={styles.field}>
+        <Text style={styles.label}>Voice language</Text>
+        <View style={styles.chips}>
+          {VOICE_LANGUAGES.map(({ value, label }) => (
+            <Pressable
+              key={value}
+              style={[styles.chip, settings.voiceLanguage === value && styles.chipActive]}
+              onPress={() => updateSettings({ voiceLanguage: value })}
+            >
+              <Text style={styles.chipText}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.hint}>Bolkar sawal poochne aur jawab sunne ki bhasha.</Text>
+      </View>
+
       <Pressable style={styles.button} onPress={testConnection} disabled={testing}>
         <Text style={styles.buttonText}>{testing ? 'Checking…' : 'Test connection'}</Text>
       </Pressable>
@@ -118,6 +140,25 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: typography.xs,
     lineHeight: 16,
+  },
+  chips: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  chip: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  chipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  chipText: {
+    color: colors.textPrimary,
+    fontSize: typography.sm,
   },
   button: {
     backgroundColor: colors.accent,

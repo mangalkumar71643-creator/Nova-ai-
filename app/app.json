@@ -4,10 +4,12 @@
     "slug": "nova-ai",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0F1115",
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.novaai.app",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
@@ -15,8 +17,59 @@
       }
     },
     "android": {
-      "package": "com.anonymous.novaai",
-      "usesCleartextTraffic": true
-    }
+      "package": "com.novaai.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundImage": "./assets/adaptive-icon-background.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
+        "backgroundColor": "#4F46E5"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "backgroundColor": "#0F1115"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Nova AI aapki photos isliye maangta hai taaki aap photo bhejkar sawal pooch sakein ya use edit kar sakein.",
+          "cameraPermission": "Nova AI camera isliye maangta hai taaki aap photo khinch kar sawal pooch sakein."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "Nova AI edit ki hui photos aapki gallery me save karta hai.",
+          "isAccessMediaLocationEnabled": false,
+          "granularPermissions": [
+            "photo"
+          ]
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Nova AI microphone isliye maangta hai taaki aap bolkar sawal pooch sakein.",
+          "speechRecognitionPermission": "Nova AI aapki awaaz ko text me badalta hai."
+        }
+      ],
+      "expo-font"
+    ]
   }
 }

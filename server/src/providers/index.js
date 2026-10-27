@@ -4,6 +4,12 @@ import { streamOpenAI } from './openai.js';
 const providers = {
   mock: streamMock,
   openai: streamOpenAI,
+  // Your own model, served by model/serve.py (it speaks the OpenAI API too).
+  nova: (options) =>
+    streamOpenAI({
+      ...options,
+      config: { ...options.config, openaiBaseUrl: options.config.novaModelUrl, openaiApiKey: '' },
+    }),
 };
 
 export function getProvider(name) {

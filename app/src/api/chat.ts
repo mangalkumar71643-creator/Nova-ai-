@@ -6,9 +6,16 @@ type ServerEvent =
   | { type: 'done' }
   | { type: 'error'; message: string };
 
+export interface ApiMessage {
+  role: Role;
+  content: string;
+  /** Photos as data URIs (data:image/jpeg;base64,...). */
+  images?: string[];
+}
+
 interface StreamChatOptions {
   settings: Settings;
-  messages: { role: Role; content: string }[];
+  messages: ApiMessage[];
   signal: AbortSignal;
   onDelta: (text: string) => void;
 }

@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import ChatScreen from '../screens/ChatScreen';
 import ConversationsScreen from '../screens/ConversationsScreen';
+import PhotoEditorScreen from '../screens/PhotoEditorScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { colors } from '../theme';
 import { RootStackParamList } from './types';
@@ -32,6 +33,7 @@ export default function RootNavigator() {
           options={{ title: 'Chats', animation: 'slide_from_left' }}
         />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="PhotoEditor" component={PhotoEditorScreen} options={{ title: 'Photo Editor' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

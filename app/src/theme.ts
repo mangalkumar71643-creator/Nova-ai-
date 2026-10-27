@@ -4,8 +4,8 @@ export const colors = {
   surfaceRaised: '#242833',
   border: '#2E3340',
 
-  accent: '#10A37F',
-  accentDark: '#0B7A5F',
+  accent: '#6D5DF6',
+  accentDark: '#4F46E5',
 
   userBubble: '#2B3040',
 

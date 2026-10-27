@@ -17,8 +17,14 @@ export async function* streamOpenAI({ messages, config, signal }) {
   });
 
   if (!res.ok || !res.body) {
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Model API error ${res.status}: ${detail.slice(0, 300)}`);
+    const body = await res.text().catch(() => '');
+    let detail = body;
+    try {
+      // OpenAI-style APIs send {error: {message}}; model/serve.py (FastAPI) sends {detail}.
+      const json = JSON.parse(body);
+      detail = json.error?.message ?? json.detail ?? body;
+    } catch {}
+    throw new Error(`Model API error ${res.status}: ${String(detail).slice(0, 300)}`);
   }
 
   for await (const data of parseSSE(res.body)) {

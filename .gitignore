@@ -2,3 +2,6 @@ node_modules/
 .env
 server/data/
 .DS_Store
+model/out/
+__pycache__/
+venv/

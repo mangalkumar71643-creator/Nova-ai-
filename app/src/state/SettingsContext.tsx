@@ -13,6 +13,7 @@ export const defaultSettings: Settings = {
     (Platform.OS === 'android' ? 'http://10.0.2.2:8787' : 'http://localhost:8787'),
   apiToken: '',
   systemPrompt: '',
+  voiceLanguage: 'hi-IN',
 };
 
 interface SettingsContextValue {

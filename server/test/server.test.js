@@ -9,6 +9,7 @@ const baseConfig = {
   provider: 'mock',
   openaiBaseUrl: '',
   openaiApiKey: '',
+  novaModelUrl: '',
   model: 'test-model',
   systemPrompt: 'test system prompt',
   apiToken: '',
@@ -119,5 +120,55 @@ test('rejects bad input and missing token', async () => {
     (await post(JSON.stringify({ messages: [{ role: 'system', content: 'x' }] }), 'secret')).status,
     400,
   );
+  server.close();
+});
+
+const PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+test('photos are passed to the model as OpenAI image parts', async () => {
+  const server = createServer({ ...baseConfig, provider: 'openai', openaiBaseUrl: fakeModelUrl });
+  const url = await listen(server);
+  const res = await fetch(`${url}/api/chat`, {
+    method: 'POST',
+    body: JSON.stringify({ messages: [{ role: 'user', content: 'Yeh kya hai?', images: [PIXEL] }] }),
+  });
+  await collect(res);
+  assert.deepEqual(lastModelRequest.body.messages[1], {
+    role: 'user',
+    content: [
+      { type: 'text', text: 'Yeh kya hai?' },
+      { type: 'image_url', image_url: { url: PIXEL } },
+    ],
+  });
+  server.close();
+});
+
+test('mock provider notices photos; bad photos are rejected', async () => {
+  const server = createServer(baseConfig);
+  const url = await listen(server);
+  const post = (messages) => fetch(`${url}/api/chat`, { method: 'POST', body: JSON.stringify({ messages }) });
+
+  const text = (await collect(await post([{ role: 'user', content: 'Dekho', images: [PIXEL] }])))
+    .filter((e) => e.type === 'delta')
+    .map((e) => e.text)
+    .join('');
+  assert.match(text, /1 photo/);
+
+  assert.equal((await post([{ role: 'user', content: 'x', images: ['http://evil.example/a.png'] }])).status, 400);
+  assert.equal((await post([{ role: 'user', content: 'x', images: Array(5).fill(PIXEL) }])).status, 400);
+  assert.equal((await post([{ role: 'assistant', content: 'x', images: [PIXEL] }])).status, 400);
+  server.close();
+});
+
+test('nova provider talks to model/serve.py without an API key', async () => {
+  const server = createServer({ ...baseConfig, provider: 'nova', novaModelUrl: fakeModelUrl, openaiApiKey: 'sk-unused' });
+  const url = await listen(server);
+  const res = await fetch(`${url}/api/chat`, {
+    method: 'POST',
+    body: JSON.stringify({ messages: [{ role: 'user', content: 'Hi' }] }),
+  });
+  const text = (await collect(res)).filter((e) => e.type === 'delta').map((e) => e.text).join('');
+  assert.equal(text, 'Hello world');
+  assert.equal(lastModelRequest.headers.authorization, undefined);
   server.close();
 });

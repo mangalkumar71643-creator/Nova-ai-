@@ -1,87 +1,122 @@
 # Nova AI — apna ChatGPT jaisa AI app
 
-Ek ChatGPT jaisa chat app (Android, iOS aur Web) aur uska backend server.
-Abhi yeh **demo model** par chalta hai. Baad me aap OpenAI / Ollama / ya **apna khud ka trained
-model** jod sakte hain — sirf server ki `.env` file badalni hogi, app me koi change nahi.
+Ek ChatGPT jaisa AI assistant: **Android app**, web app, chat server aur **apna khud ka AI model**
+(train karne aur chalane ka poora system). Kisi bahar ki AI company par nirbhar nahi.
 
 ```
 Nova-ai-/
-  app/      Expo SDK 57 mobile + web app (React Native, TypeScript)
-  server/   Node.js chat server (koi extra package nahi chahiye)
-  TRAINING.md   Apna model train karke jodne ki guide
+  app/          Expo SDK 57 app (Android, iOS, Web)
+  server/       Node.js chat server (app aur model ke beech)
+  model/        Apna AI model: train.py (sikhana) + serve.py (chalana)
+  TRAINING.md   Model banane ki poori guide
 ```
 
-## App me kya hai
+```
+ Phone app  ──►  server/ (Node, :8787)  ──►  model/serve.py (aapka model, :8000)
+```
 
-- ChatGPT jaisa chat screen — jawab word-by-word stream hota hai
-- **Stop** button (jawab beech me rokne ke liye)
-- Kai chats: naya chat, purane chats ki list, delete
-- Chats phone me save rehti hain (AsyncStorage)
-- Code blocks, `inline code` aur **bold** text ka formatting
-- Settings: Server URL, API token, custom instructions, "Test connection"
+## Features
 
-## Kaise chalayein
+- 💬 ChatGPT jaisi chat — jawab word-by-word aata hai, **Stop** button
+- 📷 **Photo bhejkar sawal** — camera ya gallery se (photo samajhne ke liye vision model chahiye)
+- 🎨 **Photo editor** — ghumana, palatna (mirror/ulta), crop (1:1, 4:5, 16:9), chhota karna,
+  undo, gallery me save, aur edit ki hui photo par AI se sawal
+- 🎤 **Bolkar sawal** — Hindi/Hinglish ya English me boliye, text apne aap likh jaata hai
+- 🔊 **Jawab suniye** — har jawab ke neeche speaker button
+- 🗂️ Kai chats, phone me save; Settings me server URL, token, custom instructions, voice bhasha
+- 🧠 **Apna model** — open-source model ko apne data par train karke chalayein (TRAINING.md)
 
-Node.js 22 ya usse naya chahiye.
+## Jaldi shuru karein
 
-**1. Server chalu karein**
+Node.js 22+ chahiye.
+
+**1. Server**
 
 ```bash
 cd server
-cp .env.example .env      # zaroorat ho to edit karein
-npm start                 # http://localhost:8787
+cp .env.example .env
+npm start                  # http://localhost:8787 — default demo model
 ```
 
-**2. App chalu karein** (doosre terminal me)
+**2. App (development)**
 
 ```bash
 cd app
 npm install
-npx expo start
+npx expo start             # w = browser me kholo
 ```
 
-Phone par **Expo Go** app se QR code scan karein, ya `w` dabakar browser me kholein.
+> Voice wala feature **Expo Go me nahi chalta** (uske liye native module chahiye) — APK ya
+> web me chalta hai. Baaki sab Expo Go me bhi chalta hai.
 
-> **Asli phone par:** phone `localhost` tak nahi pahunch sakta. App ki **Settings → Server URL**
-> me apne computer ka IP likhein (jaise `http://192.168.1.5:8787`), ya app start karte waqt:
-> `EXPO_PUBLIC_API_URL=http://192.168.1.5:8787 npx expo start`.
-> Android emulator ke liye default `http://10.0.2.2:8787` pehle se set hai.
+**3. Apna AI model** — [TRAINING.md](TRAINING.md) dekhiye. Short me:
 
-## Asli AI model jodna
+```bash
+cd model && pip install -r requirements.txt
+python train.py                       # GPU ya Google Colab par
+python serve.py --adapter out/nova-lora
+# server/.env me:  PROVIDER=nova
+```
 
-`server/.env` me:
+## Android APK banana
 
-| Kya chahiye | Setting |
+**Tareeka A — apne computer par** (Android SDK + Java 17/21 chahiye):
+
+```bash
+cd app
+npm install
+npm run build:apk
+# APK: app/android/app/build/outputs/apk/release/app-release.apk
+```
+
+**Tareeka B — Expo ke cloud par (EAS)**, computer par Android SDK nahi chahiye:
+
+```bash
+cd app
+npx eas-cli login
+npx eas-cli build -p android --profile preview      # APK ka download link milega
+```
+
+> Abhi release APK Android ke **debug key** se sign hota hai — doston me baantne aur test ke
+> liye theek hai. **Play Store** par daalne se pehle apni release key banayein (EAS ye apne aap
+> kar deta hai).
+
+### Phone ko server se jodna
+
+Phone `localhost` tak nahi pahunch sakta. App ki **Settings → Server URL** me:
+
+- Same WiFi par: computer ka IP, jaise `http://192.168.1.5:8787`
+- Internet par: jahan server deploy kiya ho (Render, Railway, VPS…) — tab `.env` me
+  `API_TOKEN` zaroor set karein aur wahi token app ki Settings me daalein.
+
+## Server settings (`server/.env`)
+
+| Setting | Kaam |
 |---|---|
-| Demo (koi key nahi) | `PROVIDER=mock` |
-| OpenAI | `PROVIDER=openai`, `OPENAI_API_KEY=sk-...`, `MODEL=gpt-4o-mini` |
-| Free, apne computer par (Ollama) | `PROVIDER=openai`, `OPENAI_BASE_URL=http://localhost:11434/v1`, `MODEL=llama3.2` |
-| Apna trained model (vLLM / LM Studio / llama.cpp) | `PROVIDER=openai`, `OPENAI_BASE_URL=http://<aapka-server>:8000/v1`, `MODEL=<model-name>` |
+| `PROVIDER=mock` | Demo (koi model nahi) |
+| `PROVIDER=nova` | **Aapka apna model** (`model/serve.py`), `NOVA_MODEL_URL` par |
+| `PROVIDER=openai` | Koi bhi OpenAI-compatible API (`OPENAI_BASE_URL`, `OPENAI_API_KEY`, `MODEL`) |
+| `API_TOKEN` | App se token maangna (internet par zaroori) |
+| `SAVE_CHATS=1` | Chats ko training data ke roop me save karna |
+| `SYSTEM_PROMPT` | AI ka default andaaz |
 
-Koi bhi service jo OpenAI Chat Completions API bolti hai, seedhe jud jaati hai.
-Apna model train karne ka tareeka: [TRAINING.md](TRAINING.md).
-
-## Server API
+### Server API
 
 - `GET /api/health` → `{ ok, provider, model }`
-- `POST /api/chat` body `{ messages: [{role: "user"|"assistant", content}], systemPrompt? }`
-  → Server-Sent Events: `{"type":"delta","text":"..."}`, phir `{"type":"done"}`
-  (ya `{"type":"error","message":"..."}`)
-
-Internet par server daalne se pehle `.env` me `API_TOKEN` zaroor set karein, aur wahi token app ki
-Settings me daalein.
+- `POST /api/chat` body `{ messages: [{ role, content, images? }], systemPrompt? }`
+  - `images`: user message ke saath max 4 photos, base64 data URL ke roop me
+  - Jawab Server-Sent Events me: `{"type":"delta","text":"..."}`, phir `{"type":"done"}`
+    (ya `{"type":"error","message":"..."}`)
 
 ## Tests
 
 ```bash
-cd server && npm test        # server tests
-cd app && npm run typecheck  # app TypeScript check
+cd server && npm test          # server tests
+cd app && npm run typecheck    # app TypeScript check
 ```
 
-## Doosre repo/app me daalna
+## Abhi kya baaki hai
 
-- **Poora app:** `app/` aur `server/` folder copy kar lein — dono alag-alag chal sakte hain.
-- **Kisi existing Expo app (jaise NovaPlay) me AI chat screen:** `app/src/` se `api/`, `state/`,
-  `components/`, `screens/ChatScreen.tsx`, `types.ts` aur `theme.ts` copy karein, `App.tsx` ki tarah
-  `SettingsProvider` + `ChatProvider` se wrap karein, aur `ChatScreen` ko navigator me ek screen
-  bana dein.
+- Login / account system (baad me)
+- Photo par AI se editing (jaise background hatana) — iske liye image-generation model chahiye
+- `train.py` abhi sirf text sikhata hai; vision model bina training ke chalta hai
