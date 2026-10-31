@@ -14,6 +14,8 @@ export function loadConfig(env = process.env) {
     systemPrompt: env.SYSTEM_PROMPT || DEFAULT_SYSTEM_PROMPT,
     apiToken: env.API_TOKEN || '',
     saveChats: env.SAVE_CHATS === '1',
+    // Chat requests allowed per client IP per minute; 0 turns the limit off.
+    rateLimitPerMinute: env.RATE_LIMIT_PER_MINUTE === undefined ? 20 : Number(env.RATE_LIMIT_PER_MINUTE),
     dataDir: env.DATA_DIR || new URL('../data/', import.meta.url).pathname,
   };
 }

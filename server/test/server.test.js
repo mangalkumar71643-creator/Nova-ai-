@@ -13,6 +13,7 @@ const baseConfig = {
   model: 'test-model',
   systemPrompt: 'test system prompt',
   apiToken: '',
+  rateLimitPerMinute: 0,
   saveChats: false,
   dataDir: '/tmp',
 };
@@ -170,5 +171,23 @@ test('nova provider talks to model/serve.py without an API key', async () => {
   const text = (await collect(res)).filter((e) => e.type === 'delta').map((e) => e.text).join('');
   assert.equal(text, 'Hello world');
   assert.equal(lastModelRequest.headers.authorization, undefined);
+  server.close();
+});
+
+test('rate limit answers 429 after too many chats from one client', async () => {
+  const server = createServer({ ...baseConfig, rateLimitPerMinute: 2 });
+  const url = await listen(server);
+  const chat = (ip) =>
+    fetch(`${url}/api/chat`, {
+      method: 'POST',
+      headers: { 'X-Forwarded-For': ip },
+      body: JSON.stringify({ messages: [{ role: 'user', content: 'Hi' }] }),
+    });
+
+  for (let i = 0; i < 2; i++) await collect(await chat('1.1.1.1'));
+  const blocked = await chat('1.1.1.1');
+  assert.equal(blocked.status, 429);
+  assert.match((await blocked.json()).error, /ruk kar/);
+  assert.equal((await chat('2.2.2.2')).status, 200); // other clients are unaffected
   server.close();
 });

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { loadConfig } from './config.js';
 import { getProvider } from './providers/index.js';
+import { clientIp, createRateLimiter } from './rateLimit.js';
 
 const MAX_BODY_BYTES = 20_000_000;
 const MAX_MESSAGES = 100;
@@ -134,6 +135,7 @@ async function handleChat(req, res, config) {
 /** The request listener on its own, so serverless hosts (Vercel) can call it directly. */
 export function createHandler(config = loadConfig()) {
   getProvider(config.provider); // fail fast on a typo in PROVIDER
+  const allowRequest = createRateLimiter(config.rateLimitPerMinute);
 
   return async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -153,6 +155,9 @@ export function createHandler(config = loadConfig()) {
       if (req.method === 'POST' && pathname === '/api/chat') {
         if (config.apiToken && req.headers.authorization !== `Bearer ${config.apiToken}`) {
           throw new HttpError(401, 'Invalid or missing API token');
+        }
+        if (!allowRequest(clientIp(req))) {
+          throw new HttpError(429, 'Bahut zyada sawal. Ek minute ruk kar dobara koshish kijiye.');
         }
         await handleChat(req, res, config);
         return;

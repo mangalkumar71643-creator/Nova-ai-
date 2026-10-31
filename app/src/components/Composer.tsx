@@ -1,6 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { Image, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { pickImage } from '../media/images';
 import { useVoiceInput } from '../media/voice';
@@ -17,6 +27,11 @@ import {
   noFocusRing,
 } from '../theme';
 import type { IconName } from './ui';
+
+// Below this width the Voice button drops its label so the placeholder fits on one line.
+const COMPACT_WIDTH = 400;
+// Caps how far the phone's font-size setting can grow the composer text.
+const MAX_FONT_SCALE = 1.2;
 
 export interface ComposerHandle {
   /** Puts text in the box and focuses it (used by the suggestion rows). */
@@ -43,6 +58,7 @@ const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   const [notice, setNotice] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const compact = useWindowDimensions().width < COMPACT_WIDTH;
   // Voice button = talk and get a spoken answer; mic icon = just dictate into the box.
   const conversationRef = useRef(false);
 
@@ -141,6 +157,7 @@ const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             onChangeText={setText}
             placeholder={voice.listening ? 'Sun raha hoon…' : 'Nova se poochho'}
             placeholderTextColor={colors.textMuted}
+            maxFontSizeMultiplier={MAX_FONT_SCALE}
             multiline
             onKeyPress={(e) => {
               // On web, Enter sends and Shift+Enter adds a new line.
@@ -179,10 +196,14 @@ const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             <Pressable
               accessibilityLabel="Voice"
               onPress={voice.listening ? voice.stop : () => startVoice(true)}
-              style={[styles.voice, voice.listening && styles.voiceActive]}
+              style={[compact ? styles.circle : styles.voice, voice.listening && styles.voiceActive]}
             >
               <Ionicons name="pulse" size={20} color={colors.onInverse} />
-              <Text style={styles.voiceText}>{voice.listening ? 'Ruko' : 'Voice'}</Text>
+              {compact ? null : (
+                <Text style={styles.voiceText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                  {voice.listening ? 'Ruko' : 'Voice'}
+                </Text>
+              )}
             </Pressable>
           )}
         </View>
@@ -251,7 +272,7 @@ const createStyles = (c: Palette) =>
       gap: spacing.xs,
     },
     plus: {
-      width: 44,
+      width: 40,
       height: 44,
       alignItems: 'center',
       justifyContent: 'center',
@@ -263,11 +284,11 @@ const createStyles = (c: Palette) =>
       paddingTop: 11,
       paddingBottom: 11,
       color: c.textPrimary,
-      fontSize: typography.lg,
+      fontSize: typography.md + 1,
       ...noFocusRing,
     },
     mic: {
-      width: 40,
+      width: 36,
       height: 44,
       alignItems: 'center',
       justifyContent: 'center',
