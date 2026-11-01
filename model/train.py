@@ -7,9 +7,9 @@ Data JSONL me ho, har line ek chat:
 
 Yahi format Nova AI server SAVE_CHATS=1 par data/conversations.jsonl me likhta hai.
 
-    python train.py                                         # identity data par
-    python train.py --data data/nova_identity.jsonl ../server/data/conversations.jsonl
-    python train.py --base Qwen/Qwen2.5-3B-Instruct --epochs 2 --merge
+    python train.py                                         # data/ ki saari .jsonl files par
+    python train.py --data data/*.jsonl ../server/data/conversations.jsonl
+    python train.py --merge --push-to-hub aapka-naam/nova-1.5b   # RunPod ke liye taiyaar model
 
 Model sirf assistant ke jawabon se seekhta hai (user ke sawal yaad nahi karta).
 """
@@ -91,7 +91,7 @@ def main():
     here = Path(__file__).parent
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base", default="Qwen/Qwen2.5-1.5B-Instruct", help="base model (Hugging Face id)")
-    parser.add_argument("--data", nargs="+", default=[str(here / "data" / "nova_identity.jsonl")])
+    parser.add_argument("--data", nargs="+", default=sorted(str(p) for p in (here / "data").glob("*.jsonl")))
     parser.add_argument("--out", default=str(here / "out" / "nova-lora"))
     parser.add_argument("--system", default=DEFAULT_SYSTEM, help="system prompt for chats that have none")
     parser.add_argument("--epochs", type=float, default=3)
@@ -102,6 +102,11 @@ def main():
     parser.add_argument("--max-len", type=int, default=2048)
     parser.add_argument("--lora-r", type=int, default=16)
     parser.add_argument("--merge", action="store_true", help="LoRA ko base me milakar poora model bhi save karo")
+    parser.add_argument(
+        "--push-to-hub",
+        metavar="USER/NAME",
+        help="merged model ko Hugging Face par (private) upload karo; HF_TOKEN env variable chahiye",
+    )
     args = parser.parse_args()
 
     tokenizer = AutoTokenizer.from_pretrained(args.base)
@@ -115,6 +120,8 @@ def main():
         raise SystemExit("Koi training data nahi mila.")
 
     use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+    # Older GPUs such as Kaggle/Colab's T4 have no bf16; fp16 mixed precision keeps them fast.
+    use_fp16 = torch.cuda.is_available() and not use_bf16
     model = AutoModelForCausalLM.from_pretrained(args.base, dtype=torch.bfloat16 if use_bf16 else torch.float32)
     model = get_peft_model(
         model,
@@ -143,6 +150,7 @@ def main():
             save_strategy="no",
             report_to=[],
             bf16=use_bf16,
+            fp16=use_fp16,
             remove_unused_columns=False,
         ),
         train_dataset=dataset,
@@ -154,11 +162,21 @@ def main():
     tokenizer.save_pretrained(args.out)
     print(f"LoRA adapter saved to {args.out}")
 
-    if args.merge:
+    if args.merge or args.push_to_hub:
         merged_dir = f"{args.out}-merged"
-        model.merge_and_unload().save_pretrained(merged_dir)
+        # bf16 halves the size versus fp32 and is what vLLM (RunPod) loads by default.
+        merged = model.merge_and_unload().to(torch.bfloat16)
+        merged.save_pretrained(merged_dir)
         tokenizer.save_pretrained(merged_dir)
         print(f"Merged model saved to {merged_dir} (vLLM / llama.cpp ke liye)")
+
+        if args.push_to_hub:
+            from huggingface_hub import HfApi
+
+            api = HfApi()  # reads HF_TOKEN from the environment
+            api.create_repo(args.push_to_hub, private=True, exist_ok=True)
+            api.upload_folder(folder_path=merged_dir, repo_id=args.push_to_hub)
+            print(f"Uploaded to https://huggingface.co/{args.push_to_hub} (private)")
 
 
 if __name__ == "__main__":

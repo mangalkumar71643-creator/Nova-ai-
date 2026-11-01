@@ -30,6 +30,18 @@ python -m venv venv && source venv/bin/activate      # Windows: venv\Scripts\act
 pip install -r requirements.txt
 ```
 
+## Sabse aasan raasta: Kaggle notebook (free GPU)
+
+`model/train_on_kaggle.ipynb` kholiye. Usme shuru me poore steps likhe hain:
+
+1. **Hugging Face** account + **Write** token
+2. **Kaggle** account (phone verify), GPU **T4** aur Internet **On**
+3. Secret `HF_TOKEN` daaliye, `HF_REPO` me apna username likhiye
+4. **Run All**: Qwen2.5-1.5B train hoga, test hoga, aur aapke Hugging Face par (private) upload ho jaayega
+5. RunPod Serverless (vLLM) me model ka naam = aapka `HF_REPO`, aur env me `HF_TOKEN`
+
+Neeche har step ka detail hai, agar aap khud apne computer/GPU par chalana chahein.
+
 ## Step 1: Data taiyaar karein
 
 Har line ek chat, is format me:
@@ -40,7 +52,10 @@ Har line ek chat, is format me:
 
 Data ke teen source:
 
-1. `model/data/nova_identity.jsonl` — pehle se 30 examples (pehchaan, andaaz, suraksha).
+1. `model/data/*.jsonl` — pehle se 77 chats:
+   - `nova_identity.jsonl`: pehchaan ("Main Nova AI hoon", Qwen par based)
+   - `nova_app_help.jsonl`: app kaise chalayein (photo, voice, settings…)
+   - `nova_style.jsonl`: Nova ka andaaz, padhai/coding ke jawab, suraksha
 2. **Asli chats** — server ki `.env` me `SAVE_CHATS=1` karein. Chats
    `server/data/conversations.jsonl` me isi format me jamaa hoti hain.
    (Users ko batayein aur unki permission lein.)
@@ -67,7 +82,8 @@ python train.py --base Qwen/Qwen2.5-3B-Instruct \
 | `--data` | Ek ya zyada JSONL files |
 | `--epochs` | Data ko kitni baar padhe (2–3 theek hai; zyada se model ratta maarne lagta hai) |
 | `--out` | Kahan save ho (default `out/nova-lora`) |
-| `--merge` | `out/nova-lora-merged` me poora model bhi bana de (vLLM / llama.cpp ke liye) |
+| `--merge` | `out/nova-lora-merged` me poora model (bf16) bhi bana de (vLLM / RunPod ke liye) |
+| `--push-to-hub user/naam` | Merged model ko Hugging Face par private upload kare (`HF_TOKEN` env chahiye) |
 | `--max-steps 20` | Bas jaldi se test karne ke liye |
 
 Model **sirf assistant ke jawabon** se seekhta hai, user ke sawal ratta nahi karta.
