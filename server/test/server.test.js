@@ -191,3 +191,27 @@ test('rate limit answers 429 after too many chats from one client', async () => 
   assert.equal((await chat('2.2.2.2')).status, 200); // other clients are unaffected
   server.close();
 });
+
+test('model errors from a sleeping Space or a text-only model become Hinglish', async () => {
+  const replies = [
+    [503, { error: { message: 'Loading model' } }, /jaag raha hai/],
+    [500, { error: { message: 'image input is not supported' } }, /photo nahi dekh sakta/],
+  ];
+  for (const [status, body, expected] of replies) {
+    const failing = http.createServer((req, res) => {
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(body));
+    });
+    const server = createServer({ ...baseConfig, provider: 'openai', openaiBaseUrl: await listen(failing) });
+    const url = await listen(server);
+    const res = await fetch(`${url}/api/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ messages: [{ role: 'user', content: 'Hi' }] }),
+    });
+    const [event] = await collect(res);
+    assert.equal(event.type, 'error');
+    assert.match(event.message, expected);
+    server.close();
+    failing.close();
+  }
+});

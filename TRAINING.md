@@ -38,7 +38,9 @@ pip install -r requirements.txt
 2. **Kaggle** account (phone verify), GPU **T4** aur Internet **On**
 3. Secret `HF_TOKEN` daaliye, `HF_REPO` me apna username likhiye
 4. **Run All**: Qwen2.5-1.5B train hoga, test hoga, aur aapke Hugging Face par (private) upload ho jaayega
-5. RunPod Serverless (vLLM) me model ka naam = aapka `HF_REPO`, aur env me `HF_TOKEN`
+5. Model chalayein:
+   - **Free, bina card:** Hugging Face Space (CPU). Neeche "Free hosting" dekhiye.
+   - **Tez (GPU, Visa/Mastercard chahiye):** RunPod Serverless (vLLM). Model ka naam = aapka `HF_REPO`, aur env me `HF_TOKEN`. RunPod RuPay card nahi leta.
 
 Neeche har step ka detail hai, agar aap khud apne computer/GPU par chalana chahein.
 
@@ -121,6 +123,32 @@ NOVA_MODEL_URL=http://localhost:8000/v1
 ```
 
 Server restart karein. App ab **aapke model** se baat karega. App me kuch nahi badalna.
+
+## Free hosting: Hugging Face Space (bina GPU, bina card)
+
+`space/Dockerfile` aapke private model ko build ke waqt download karke GGUF (Q4_K_M, ~1 GB)
+me compress karta hai aur llama.cpp se OpenAI jaisi API chalata hai. Free CPU (2 core) par
+Nova 1.5B lagbhag 6–10 shabd/second likhta hai.
+
+1. huggingface.co → **New Space** → naam `nova-ai`, SDK **Docker → Blank**,
+   hardware **CPU basic (free)**, **Private** → Create Space
+2. Space → **Settings → Variables and secrets → New secret**: `HF_TOKEN` = aapka **Read** token
+3. Space → **Files → Add file → Create a new file**: naam `Dockerfile`, andar `space/Dockerfile`
+   ka poora code → Commit. Build 5–10 minute leta hai; status **Running** hone tak rukiye.
+4. Vercel env:
+   ```
+   PROVIDER=openai
+   OPENAI_BASE_URL=https://<username>-nova-ai.hf.space/v1
+   OPENAI_API_KEY=<HF Read token>     # private Space kholne ke liye (Sensitive rakhein)
+   MODEL=nova
+   ```
+
+Dhyan dein:
+- 48 ghante koi use na kare to Space so jaata hai. Pehla sawal use jagata hai (1–2 minute);
+  tab app "Nova abhi jaag raha hai" dikhata hai.
+- Ek waqt me ek hi jawab banta hai. Zyada users ho jaayein to RunPod/GPU par shift karein —
+  sirf Vercel ka `OPENAI_BASE_URL` badlega, app me kuch nahi.
+- Naya model train kiya? Space → Settings → **Factory rebuild**.
 
 ## Photo samajhne wala model
 

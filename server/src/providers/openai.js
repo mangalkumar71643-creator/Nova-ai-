@@ -24,6 +24,13 @@ export async function* streamOpenAI({ messages, config, signal }) {
       const json = JSON.parse(body);
       detail = json.error?.message ?? json.detail ?? body;
     } catch {}
+    if (/image input is not supported|does not support image/i.test(String(detail))) {
+      throw new Error('Yeh model abhi photo nahi dekh sakta. Photo ke bina sawal poochhiye.');
+    }
+    if (res.status === 503) {
+      // A sleeping Hugging Face Space, or llama.cpp still loading the model.
+      throw new Error('Nova abhi jaag raha hai. 1-2 minute baad dobara poochhiye.');
+    }
     throw new Error(`Model API error ${res.status}: ${String(detail).slice(0, 300)}`);
   }
 
